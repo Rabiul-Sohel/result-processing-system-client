@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import useGetStudent from "../../hooks/useGetStudent";
 import useAuth from "../../hooks/useAuth";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 import useGetPassMark from "../../hooks/useGetPassMark";
 import Swal from "sweetalert2";
+import useGetExam from "../../hooks/useGetExam";
+import useGetSingleUser from "../../hooks/useGetSingleUser";
 
 const AddMarks = () => {
   //   const [students, setStudents] = useState([]);
@@ -14,10 +17,15 @@ const AddMarks = () => {
   const [group, setGroup] = useState(null);
   // const [subjectName, setSubjectName] = useState(null);
   const { user, singleUser } = useAuth();
+  // const {singleUser} = useGetSingleUser()
   const axiosPublic = useAxiosPublic();
+  const axiosSecure = useAxiosSecure()
+  // const subjectName = singleUser.subject;
   const subjectName = singleUser.subject;
   const [passMark] = useGetPassMark(subjectName);
+  const { singleExam } = useGetExam(session, exam)
   console.log(singleUser);
+  // const user =true
   const scienceSubject = [
     "Physics",
     "Chemistry",
@@ -48,34 +56,11 @@ const AddMarks = () => {
     "Agriculture Studies",
   ];
 
-  const { data: singleExam = {} } = useQuery({
-    queryKey: ["exam", session, exam],
-    queryFn: async () => {
-      const res = axiosPublic.get(
-        `/singlExam?session=${session}&&exam=${exam}`
-      );
-      return res.data;
-    },
-  });
-  //   console.log(singlExam);
-  // //   TODO: user
-  // // const userSubject = 'Bangla'
-  // useEffect(()=>{
-  //   getListedUser(user?.email)
-  //     .then(res => setSubjectName(res.data?.subject))
-  // },[getListedUser, user])
 
-  // const subjectName = listedUser.subject;
-  // console.log(subjectName);
-  const { students, refetch } = useGetStudent(session, exam, group);
-  console.log(students);
+  const { students, refetch, isPending } = useGetStudent(session, exam, group);
+  // console.log(students);
   const sortedStudents = students.sort((a, b) => a.roll - b.roll);
 
-  //   useEffect(() => {
-  //     axios
-  //       .get(`http://localhost:5000/students?session=${session}`)
-  //       .then((res) => setStudents(res.data));
-  //   }, [session]);
 
   const handleAddMarks = (e, student) => {
     e.preventDefault();
@@ -137,8 +122,8 @@ const AddMarks = () => {
       addedGp,
     };
     console.log(marks);
-    axios
-      .patch(`http://localhost:5000/students/${student._id}`, {
+    axiosPublic
+      .patch(`/students/${student._id}`, {
         subjectName,
         marks,
         session,
@@ -149,154 +134,154 @@ const AddMarks = () => {
         }
       });
   };
-  const handleSession = (e) => {
-    e.preventDefault();
-    const session = e.target.value;
 
-    // axios
-    //   .get(`http://localhost:5000/students?session=${session}`)
-    //   .then((res) => setStudents(res.data));
+
+  const handleSession = (e) => {
+    // e.preventDefault();
+    const session = e.target.value;
 
     setSession(session);
     // refetch()
   };
   const handleExam = (e) => {
-    if(!singleUser.isApproved){
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Please wait for approval",
-        footer: '<a href="#">Why do I have this issue?</a>'
-      });
-    }
-    e.preventDefault();
-    setExam(e.target.value);
+    const exam = e.target.value;
+    setExam(exam);
   };
-  // const handleSetPass = e =>{
-  //   e.preventDefault()
-  //   const form = e.target;
-  //   const cqPass = parseInt(form.cq.value);
-  //   const mcqPass = parseInt(form.mcq.value);
-  //   setCqPass(cqPass)
-  //   setMcqPass(mcqPass)
-  //   console.log(cqPass, mcqPass);
-  // }
+
 
   return (
-    <div>
-      <div>
+    <div className="max-w-7xl mx-auto">
+      <div className="mt-5">
         <span>Subject: {subjectName}</span>
       </div>
+      <div className="my-5 flex flex-col md:flex-row w-full  mx-auto">
+        <label htmlFor="">Session</label>
+        <select onChange={handleSession} name="session" id="">
+          <option value="">Select one</option>
+          <option value="2023-24">2023-24</option>
+          <option value="2024-25">2024-25</option>
+        </select>
+        <label htmlFor="">Exam: </label>
+        <select onChange={handleExam} name="exam" id="">
+          <option value="">Select one</option>
+          <option value="Half Yearly">Half Yearly</option>
+          <option value="Final">Final</option>
+          <option value="Pre Test">Pre Test</option>
+          <option value="Test">Test</option>
+        </select>
+        <label htmlFor="">Group</label>
+        <select onChange={(e) => setGroup(e.target.value)} name="group" id="">
+          <option value="">Select group</option>
+          <option
+            disabled={!scienceSubject.includes(subjectName)}
+            value="Science"
+          >
+            Science
+          </option>
+          <option
+            disabled={!humanitiesSubjects.includes(subjectName)}
+            value="Humanities"
+          >
+            Humanities
+          </option>
+          <option
+            disabled={!businessSubjects.includes(subjectName)}
+            value="Business Studies"
+          >
+            Business Studies
+          </option>
+        </select>
+      </div>
+      {
+        !session || !exam || !group ? null : isPending ? <div className="flex min-h-[50vh] justify-center items-center">
+          <span className="loading loading-spinner text-primary"></span>
+        </div> : students.length > 0 ?
+          <div>
+            {sortedStudents.map((student) => (
+              <form
+                className="border w-full flex items-center justify-around gap-1 md:gap-5 py-3"
+                onSubmit={(e) => handleAddMarks(e, student)}
+                key={student._id}
+              >
+                <div className="btn btn-sm lg:btn-md text-xs md:text-base "> {student.roll} </div>
+                <div className="flex gap-2 flex-col md:flex-row text-sm md:text-base ">
+                  <label htmlFor="">CQ:</label>
+                  <input className="w-10 md:w-24 border rounded-md "
+                    placeholder={student[subjectName]?.cq}
+                    defaultValue={student[subjectName]?.cq}
+                    type="number"
+                    name="cq"
+                  />
+                </div>
+                <div className="flex gap-2 flex-col md:flex-row text-sm md:text-base ">
+                  <label hidden={subjectName === "English"} htmlFor="">
+                    MCQ:
+                  </label>
+                  <input
+                    className="w-10 md:w-24 border rounded-md"
+                    placeholder={student[subjectName]?.mcq}
+                    defaultValue={student[subjectName]?.mcq}
+                    hidden={subjectName === "English"}
+                    type="number"
+                    name="mcq"
+                  />
+                </div>
+                <div className="flex gap-2 flex-col md:flex-row text-sm md:text-base ">
+                  <label
+                    hidden={
+                      !(
+                        subjectName === "ICT" ||
+                        subjectName === "Biology" ||
+                        subjectName === "Agriculture Studies" ||
+                        subjectName === "Chemistry" ||
+                        subjectName === "Higher Math" ||
+                        subjectName === "Physics"
+                      )
+                    }
+                    htmlFor=""
+                  >
+                    Practical:
+                  </label>
+                  <input
+                    className="w-10 md:w-24 border rounded-md"
+                    hidden={
+                      !(
+                        subjectName === "ICT" ||
+                        subjectName === "Biology" ||
+                        subjectName === "Agriculture Studies" ||
+                        subjectName === "Chemistry" ||
+                        subjectName === "Higher Math" ||
+                        subjectName === "Physics"
+                      )
+                    }
+                    placeholder={student[subjectName]?.practical}
+                    defaultValue={student[subjectName]?.practical}
+                    type="number"
+                    name="practical"
+                  />
+                </div>
+                <div className="flex flex-col md:flex-row w-12  gap-2 text-sm md:text-base ">
+                  <label htmlFor="">Total:</label>
+                  <div> {student[subjectName]?.total} </div>
+                </div>
+                <div className={!singleExam.isModificable && 'tooltip'} data-tip={!singleExam.isModificable && "Sorry, Unavialable"}>
+                  <input
 
-      <label htmlFor="">Session</label>
-      <select onChange={handleSession} name="session" id="">
-        <option value="">Select one</option>
-        <option value="2023-24">2023-24</option>
-        <option value="2024-25">2024-25</option>
-      </select>
-      <label htmlFor="">Exam: </label>
-      <select onChange={handleExam} name="exam" id="">
-        <option value="">Select one</option>
-        <option value="Half Yearly">Half Yearly</option>
-        <option value="Final">Final</option>
-        <option value="Pre Test">Pre Test</option>
-        <option value="Test">Test</option>
-      </select>
-      <label htmlFor="">Group</label>
-      <select onChange={(e) => setGroup(e.target.value)} name="group" id="">
-        <option value="">Select group</option>
-        <option
-          disabled={!scienceSubject.includes(subjectName)}
-          value="Science"
-        >
-          Science
-        </option>
-        <option
-          disabled={!humanitiesSubjects.includes(subjectName)}
-          value="Humanities"
-        >
-          Humanities
-        </option>
-        <option
-          disabled={!businessSubjects.includes(subjectName)}
-          value="Business Studies"
-        >
-          Business Studies
-        </option>
-      </select>
-      {sortedStudents.map((student) => (
-        <form
-          className="border flex items-center justify-around gap-5 py-3"
-          onSubmit={(e) => handleAddMarks(e, student)}
-          key={student._id}
-        >
-          <div className="btn"> {student.roll} </div>
-          <div className="flex flex-col">
-            <label htmlFor="">CQ</label>
-            <input
-              placeholder={student[subjectName]?.cq}
-              defaultValue={student[subjectName]?.cq}
-              type="number"
-              name="cq"
-            />
+                    disabled={!singleExam.isModificable}
+                    className="btn btn-sm md:btn-md"
+                    type="submit"
+                    value={student[subjectName]?.total ? "Modify" : "Input"}
+                  />
+                </div>
+
+              </form>
+            ))}
+          </div> :
+          <div className="flex justify-center min-h-[40vh] items-center">
+            <h3>There is No student to add marks. Please contact the admin.</h3>
           </div>
-          <div className="flex flex-col">
-            <label hidden={subjectName === "English"} htmlFor="">
-              MCQ
-            </label>
-            <input
-              placeholder={student[subjectName]?.mcq}
-              defaultValue={student[subjectName]?.mcq}
-              hidden={subjectName === "English"}
-              type="number"
-              name="mcq"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label
-              hidden={
-                !(
-                  subjectName === "ICT" ||
-                  subjectName === "Biology" ||
-                  subjectName === "Agriculture Studies" ||
-                  subjectName === "Chemistry" ||
-                  subjectName === "Higher Math" ||
-                  subjectName === "Physics"
-                )
-              }
-              htmlFor=""
-            >
-              Practical
-            </label>
-            <input
-              hidden={
-                !(
-                  subjectName === "ICT" ||
-                  subjectName === "Biology" ||
-                  subjectName === "Agriculture Studies" ||
-                  subjectName === "Chemistry" ||
-                  subjectName === "Higher Math" ||
-                  subjectName === "Physics"
-                )
-              }
-              placeholder={student[subjectName]?.practical}
-              defaultValue={student[subjectName]?.practical}
-              type="number"
-              name="practical"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="">Total</label>
-            <div className=""> {student[subjectName]?.total} </div>
-          </div>
-          <input
-            disabled={!student.modifiable}
-            className="btn"
-            type="submit"
-            value={student[subjectName]?.total ? "Modify" : "Input"}
-          />
-        </form>
-      ))}
+      }
+
     </div>
   );
 };

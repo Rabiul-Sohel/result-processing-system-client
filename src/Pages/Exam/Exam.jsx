@@ -3,43 +3,70 @@ import useAxiosPublic from "../../hooks/useAxiosPublic";
 import Swal from "sweetalert2";
 
 const Exam = () => {
-  const axiosPublic = useAxiosPublic();
+  const axiosPublic = useAxiosPublic()
+  // const students = useState([])
+  
 
-  const { data: exams = [], refetch } = useQuery({
+  const { data: exams = [], refetch, isPending } = useQuery({
     queryKey: ["exams"],
     queryFn: async () => {
       const res = await axiosPublic.get("/exams");
       return res.data;
     },
   });
-  console.log(exams);
 
-  const handleExamInput = (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const session = form.session.value;
-    const examName = form.exam.value;
-    const isModificable = false;
-    // console.log(session, exam);
-    const exam = {
-      session,
-      examName,
-      isModificable,
-    };
-    axiosPublic.post("/exams", exam).then((res) => {
-      if (res.data.insertedId) {
-        refetch();
-      }
-    });
-  };
+  // const handleExamInput = (e) => {
+  //   e.preventDefault();
+  //   const form = e.target;
+  //   const session = form.session.value;
+  //   const examName = form.exam.value;
+  //   const isModificable = false;
+  //   // console.log(session, exam);
+  //   const exam = {
+  //     session,
+  //     examName,
+  //     isModificable,
+  //   };
+  //   Swal.fire({
+  //     title: "Are you sure?",
+  //     text: `${session} and ${examName}`,
+  //     icon: "warning",
+  //     showCancelButton: true,
+  //     confirmButtonColor: "#3085d6",
+  //     cancelButtonColor: "#d33",
+  //     confirmButtonText: "Yes, Insert it!"
+  //   }).then((result) => {
+  //     if (result.isConfirmed) {
+  //       axiosPublic.post("/exams", exam).then((res) => {
+  //         if (res.data.insertedId) {
+  //           Swal.fire({
+  //             title: "Inserted!",
+  //             text: "Your file has been Inserted.",
+  //             icon: "success"
+  //           });
+  //           refetch();
+  //         }
+  //       });
+
+  //     }
+  //   });
+
+  // };
 
   const handleEnable = (id) => {
     const isModificable = true;
     axiosPublic
       .patch(`/exams/${id}`, { isModificable })
       .then((res) => {
-        if(res.data.modifiedCount > 0){
-            refetch()
+        if (res.data.modifiedCount > 0) {
+          Swal.fire({
+            position: "top-end",
+            icon: "success",
+            title: "Exam has been enabled",
+            showConfirmButton: false,
+            timer: 1500
+          });
+          refetch()
         }
       });
   };
@@ -48,45 +75,69 @@ const Exam = () => {
     axiosPublic
       .patch(`/exams/${id}`, { isModificable })
       .then((res) => {
-        if(res.data.modifiedCount > 0){
-            refetch()
+        if (res.data.modifiedCount > 0) {
+          Swal.fire({
+            position: "top-end",
+            icon: "success",
+            title: "Exam has been Disabled",
+            showConfirmButton: false,
+            timer: 1500
+          });
+          refetch()
         }
       });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (session, exam) => {
+    console.log(session, exam);
     Swal.fire({
-        title: "Are you sure?",
-        text: "You won't be able to revert this!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, delete it!"
-      }).then((result) => {
-        if (result.isConfirmed) {
-            axiosPublic.delete(`/exams/${id}`)
-            .then(res =>{
-                if(res.data.deletedCount > 0){
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        axiosPublic.delete(`/students?session=${session}&&exam=${exam}`)
+          .then(res => {
+            if (res.data.deletedCount > 0) {
+              axiosPublic.delete(`/exams?session=${session}&&exam=${exam}`)
+                .then(res => {
+                  console.log(res.data);
+                  if (res.data.deletedCount > 0) {
                     Swal.fire({
-                        title: "Deleted!",
-                        text: "Your file has been deleted.",
-                        icon: "success"
-                      });
+                      title: "Deleted!",
+                      text: "Your file has been deleted.",
+                      icon: "success"
+                    });
                     refetch()
-                }
-            })
-          
-        }
-      });
-   
+                  }
+                })
+
+            }
+
+
+          })
+
+
+      }
+    });
+
   };
+
+  if(isPending){
+    return <div className="flex min-h-[50vh] justify-center items-center">
+            <span className="loading loading-spinner text-primary"></span>
+        </div>
+  }
 
   return (
     <div>
       {/* modification access */}
-      <h2>Modification</h2>
-      <form onSubmit={handleExamInput}>
+      <h2 className="text-white bg-green-500 mb-5">Exams</h2>
+      {/* <form onSubmit={handleExamInput}>
         <label>Session</label>
         <select name="session" id="">
           <option value="">Select One</option>
@@ -105,43 +156,43 @@ const Exam = () => {
         <button className="btn" type="submit">
           Insert
         </button>
-      </form>
+      </form> */}
       <div>
-        <div className="overflow-x-auto mx-auto">
-          <table className="table mx-auto">
+        <div className="  mx-auto">
+          <table className="text-sm lg:text-xl max-3xl border p-16 mx-auto">
             {/* head */}
-            <thead>
-              <tr className="text-center">
-                <th></th>
+            <thead className="mb-3">
+              <tr className="text-center flex gap-2 md:gap-10 ">
+                <th>#</th>
                 <th>Session</th>
                 <th>Name</th>
-                <th>Action</th>
+                <th className="">Action</th>
               </tr>
             </thead>
             <tbody>
               {/* row 1 */}
               {exams.map((exam, idx) => (
-                <tr className="text-center" key={exam._id}>
-                  <th> {idx + 1} </th>
+                <tr className="text-center flex gap-1 md:gap-10 items-center self-center border  py-2 px-0 md:px-2" key={exam._id}>
+                  <th> {idx + 1}. </th>
                   <td> {exam.session} </td>
-                  <td> {exam.examName} </td>
-                  <td>
+                  <td className=""> {exam.exam} </td>
+                  <td className="flex gap-0 md:gap-2">
                     {
-                        exam.isModificable ? <button
+                      exam.isModificable ? <button
                         onClick={() => handleDisable(exam._id)}
-                        className="btn"
+                        className="btn btn-sm btn-primary"
                       >
                         Disable
-                      </button>: <button
-                      onClick={() => handleEnable(exam._id)}
-                      className="btn"
-                    >
-                      Eanable
-                    </button>
+                      </button> : <button
+                        onClick={() => handleEnable(exam._id)}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Eanable
+                      </button>
                     }
                     <button
-                      onClick={() => handleDelete(exam._id)}
-                      className="btn"
+                      onClick={() => handleDelete(exam.session, exam.exam)}
+                      className="btn btn-sm btn-error "
                     >
                       Delete
                     </button>

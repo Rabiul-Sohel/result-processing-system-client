@@ -10,6 +10,8 @@ import AllUser from "../Pages/AllUser/AllUser";
 import Exam from "../Pages/Exam/Exam";
 import AdminPanel from "../Pages/Admin/AdminPanel";
 import Result from "../Pages/Result/Result";
+import PrivateRoute from "./PrivateRoute";
+import AdminRoute from "./AdminRoute";
 
 export const router = createBrowserRouter([
     {
@@ -26,19 +28,19 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: 'addMarks',
-                        element: <AddMarks></AddMarks>
+                        element: <PrivateRoute><AddMarks></AddMarks></PrivateRoute>
                     },
                     {
                         path: 'allUsers',
-                        element: <AllUser></AllUser>
+                        element: <AdminRoute><AllUser></AllUser></AdminRoute>
                     },
                     {
                         path: 'exams',
-                        element: <Exam></Exam>
+                        element: <AdminRoute><Exam></Exam></AdminRoute>
                     },
                     {
                         path: '/adminPanel',
-                        element: <AdminPanel></AdminPanel>
+                        element: <AdminRoute><AdminPanel></AdminPanel></AdminRoute>
                     },
                    
                 ]

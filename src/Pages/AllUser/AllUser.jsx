@@ -4,14 +4,16 @@ import User from "../../Component/User/User";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Swal from "sweetalert2";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 
 const AllUser = () => {
 //   const [allUsers, setAllUsers] = useState([])
   const axiosPublic = useAxiosPublic();
-  const {data:allUsers=[], refetch} = useQuery({
+  const axiosSecure = useAxiosSecure();
+  const {data:allUsers=[], refetch, isPending} = useQuery({
     queryKey: ['teacher'],
     queryFn: async()=>{
-        const res = await axiosPublic.get("/allUsers")
+        const res = await axiosSecure.get("/allUsers")
         return res.data
          
     }
@@ -27,7 +29,7 @@ const AllUser = () => {
     const name = user.name
     console.log(id);
     const isApproved = true
-    axiosPublic.patch(`/users/approval/${id}`, {isApproved})
+    axiosSecure.patch(`/users/approval/${id}`, {isApproved})
         .then(res => {
             console.log(res.data);
             if(res.data.modifiedCount > 0){
@@ -47,7 +49,7 @@ const AllUser = () => {
     const id = user?._id;
     const name = user.name
     const isApproved = false
-    axiosPublic.patch(`/users/approval/${id}`, {isApproved})
+    axiosSecure.patch(`/users/approval/${id}`, {isApproved})
         .then(res => {
             if(res.data.modifiedCount > 0){
                 Swal.fire({
@@ -74,7 +76,7 @@ const AllUser = () => {
         confirmButtonText: "Yes, Make Admin!"
       }).then((result) => {
         if (result.isConfirmed) {
-            axiosPublic.patch(`/users/admin/${id}`, {isAdmin})
+            axiosSecure.patch(`/users/admin/${id}`, {isAdmin})
                 .then(res => {
                     console.log(res.data)
                     if(res.data.modifiedCount > 0){
@@ -103,7 +105,7 @@ const AllUser = () => {
         confirmButtonText: "Yes, Remove Admin!"
       }).then((result) => {
         if (result.isConfirmed) {
-            axiosPublic.patch(`/users/admin/${id}`, {isAdmin})
+            axiosSecure.patch(`/users/admin/${id}`, {isAdmin})
                 .then(res => {
                     console.log(res.data)
                     if(res.data.modifiedCount > 0){
@@ -120,6 +122,37 @@ const AllUser = () => {
         }
       });
   }
+  if(isPending){
+    return <div className="flex min-h-[50vh] justify-center items-center">
+            <span className="loading loading-spinner text-primary"></span>
+        </div>
+  }
+  const handleUserDelete = (id)=>{
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        axiosPublic.delete(`/users/${id}`)
+          .then(res => {
+            if(res.data.deletedCount > 0){
+              Swal.fire({
+                title: "Deleted!",
+                text: "Your file has been deleted.",
+                icon: "success"
+              });
+              refetch()
+            }
+          })
+       
+      }
+    });
+  }
 
   return (
     <div>
@@ -134,6 +167,7 @@ const AllUser = () => {
             <th>Subject</th>
             <th>Aproval</th>
             <th>Action</th>
+            <th>Danger</th>
           </tr>
         </thead>
         <tbody>
@@ -168,6 +202,9 @@ const AllUser = () => {
                {
                 user.isAdmin ? <button onClick={()=>handleRemoveAdmin(user._id)} className="btn">Remove as Admin</button>:  <button onClick={()=> handleMakeAdmin(user._id)} className="btn">Make Admin</button>
                } 
+              </th>
+              <th>
+                <button onClick={()=>handleUserDelete(user._id)} className="btn btn-warning">Delete</button>
               </th>
             </tr>
           ))}
